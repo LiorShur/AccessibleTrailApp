@@ -3,9 +3,10 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import MapboxGL from '@rnmapbox/maps';
 import { AppNavigator } from './navigation/AppNavigator';
+import { config } from './config';
 
-// Initialize Mapbox — replace with your access token
-MapboxGL.setAccessToken('YOUR_MAPBOX_ACCESS_TOKEN');
+// Initialize Mapbox — set your token in src/config.ts
+MapboxGL.setAccessToken(config.mapbox.accessToken);
 
 const App: React.FC = () => {
   return (

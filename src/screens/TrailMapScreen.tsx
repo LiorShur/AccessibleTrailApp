@@ -1,5 +1,14 @@
-import React, { useEffect, useCallback, useState } from 'react';
-import { View, StyleSheet, StatusBar, Alert } from 'react-native';
+import React, { useEffect, useCallback, useState, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  StatusBar,
+  Alert,
+  TouchableOpacity,
+  AccessibilityInfo,
+} from 'react-native';
+import MapboxGL from '@rnmapbox/maps';
 import { TrailMap } from '../components/map';
 import { RecordingControls, RecordingStats } from '../components/recording';
 import { TrailInfoSheet, TrailInfoData } from '../components/trail-info';
@@ -8,6 +17,8 @@ import { useTrailRecording } from '../hooks/useTrailRecording';
 import { useLocation } from '../hooks/useLocation';
 import { Waypoint } from '../models';
 import { colors } from '../theme/colors';
+import { typography } from '../theme/typography';
+import { spacing } from '../theme/spacing';
 
 interface TrailMapScreenProps {
   navigation: any;
@@ -34,7 +45,7 @@ export const TrailMapScreen: React.FC<TrailMapScreenProps> = ({ navigation }) =>
 
   const isActive = session.state === 'recording' || session.state === 'paused';
 
-  const { currentLocation, requestPermission } = useLocation({
+  const { currentLocation, error: locationError, requestPermission } = useLocation({
     tracking: session.state === 'recording',
     distanceFilter: 5,
     interval: 3000,
@@ -49,6 +60,9 @@ export const TrailMapScreen: React.FC<TrailMapScreenProps> = ({ navigation }) =>
 
   // Trail info sheet (shown when recording stops)
   const [trailInfoVisible, setTrailInfoVisible] = useState(false);
+
+  // Camera ref for centering on waypoints
+  const cameraRef = useRef<MapboxGL.Camera>(null);
 
   // Request location permission on mount
   useEffect(() => {
@@ -65,8 +79,16 @@ export const TrailMapScreen: React.FC<TrailMapScreenProps> = ({ navigation }) =>
   // --- Handlers ---
 
   const handleStart = useCallback(() => {
+    if (locationError) {
+      Alert.alert(
+        'Location Required',
+        'GPS access is needed to record trails. Please enable location permissions in your device settings.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
     startRecording();
-  }, [startRecording]);
+  }, [startRecording, locationError]);
 
   const handlePause = useCallback(() => {
     pauseRecording();
@@ -77,7 +99,6 @@ export const TrailMapScreen: React.FC<TrailMapScreenProps> = ({ navigation }) =>
   }, [resumeRecording]);
 
   const handleStop = useCallback(() => {
-    // Confirm before stopping
     Alert.alert(
       'Finish Recording?',
       'This will stop recording and let you save the trail.',
@@ -123,8 +144,17 @@ export const TrailMapScreen: React.FC<TrailMapScreenProps> = ({ navigation }) =>
   );
 
   const handleWaypointPress = useCallback(
-    (_waypoint: Waypoint) => {
-      // Could center map on waypoint or show detail
+    (waypoint: Waypoint) => {
+      if (cameraRef.current) {
+        cameraRef.current.setCamera({
+          centerCoordinate: [waypoint.longitude, waypoint.latitude],
+          zoomLevel: 17,
+          animationDuration: 600,
+        });
+        AccessibilityInfo.announceForAccessibility(
+          `Centered on ${waypoint.name || waypoint.type} waypoint`
+        );
+      }
     },
     []
   );
@@ -134,7 +164,6 @@ export const TrailMapScreen: React.FC<TrailMapScreenProps> = ({ navigation }) =>
       const trail = finalizeTrail(info);
       setTrailInfoVisible(false);
       reset();
-      // Navigate to trail detail or show success
       Alert.alert(
         'Trail Saved',
         `"${trail.name}" has been saved with ${trail.waypoints.length} waypoint${trail.waypoints.length !== 1 ? 's' : ''}.`
@@ -142,6 +171,13 @@ export const TrailMapScreen: React.FC<TrailMapScreenProps> = ({ navigation }) =>
     },
     [finalizeTrail, reset]
   );
+
+  const handleRetryPermission = useCallback(async () => {
+    const granted = await requestPermission();
+    if (granted) {
+      AccessibilityInfo.announceForAccessibility('Location access granted');
+    }
+  }, [requestPermission]);
 
   return (
     <View style={styles.container}>
@@ -163,7 +199,25 @@ export const TrailMapScreen: React.FC<TrailMapScreenProps> = ({ navigation }) =>
         }
         onLongPress={handleMapLongPress}
         onWaypointPress={handleWaypointPress}
+        cameraRef={cameraRef}
       />
+
+      {/* Location error banner */}
+      {locationError && (
+        <View style={styles.errorBanner} accessibilityRole="alert">
+          <Text style={styles.errorText}>
+            Location unavailable — GPS access is needed to record trails
+          </Text>
+          <TouchableOpacity
+            onPress={handleRetryPermission}
+            accessibilityLabel="Retry location access"
+            accessibilityHint="Requests GPS permission again"
+            style={styles.retryButton}
+          >
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Bottom panel: stats + controls */}
       <View style={styles.bottomPanel} pointerEvents="box-none">
@@ -212,6 +266,47 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.neutral.white,
+  },
+  errorBanner: {
+    position: 'absolute',
+    top: 48,
+    left: spacing.md,
+    right: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.semantic.errorLight,
+    borderWidth: 1,
+    borderColor: colors.semantic.error,
+    borderRadius: 12,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    elevation: 6,
+    shadowColor: colors.neutral.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+  },
+  errorText: {
+    ...typography.caption,
+    color: colors.semantic.error,
+    flex: 1,
+    fontSize: 14,
+  },
+  retryButton: {
+    marginLeft: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.semantic.error,
+    borderRadius: 8,
+    minWidth: 48,
+    minHeight: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  retryText: {
+    ...typography.button,
+    fontSize: 13,
+    color: colors.neutral.white,
   },
   bottomPanel: {
     position: 'absolute',

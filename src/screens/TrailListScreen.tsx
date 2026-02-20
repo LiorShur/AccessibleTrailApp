@@ -18,8 +18,148 @@ interface TrailListScreenProps {
   navigation: any;
 }
 
-// Placeholder: in production this would come from async storage or an API
-const SAMPLE_TRAILS: Trail[] = [];
+// Sample trails for demonstration — in production, load from async storage or API
+const SAMPLE_TRAILS: Trail[] = [
+  {
+    id: 'sample-1',
+    name: 'Lakeside Loop',
+    description:
+      'A gentle paved loop around Mirror Lake with benches every 200 meters. Fully wheelchair accessible with level terrain and shade throughout.',
+    difficulty: 'easy',
+    surfaceType: 'paved',
+    accessibilityFeatures: [
+      'wheelchair_accessible',
+      'paved_surface',
+      'gentle_slope',
+      'rest_areas',
+      'accessible_parking',
+      'accessible_restrooms',
+      'wide_path',
+      'level_terrain',
+      'shade_available',
+    ],
+    coordinates: [],
+    waypoints: [
+      {
+        id: 'wp-1',
+        type: 'trailhead',
+        latitude: 37.7694,
+        longitude: -122.4862,
+        name: 'Main Entrance',
+        accessibilityNote: 'Accessible parking lot with 4 designated spaces',
+        createdAt: '2026-01-15T09:00:00Z',
+      },
+      {
+        id: 'wp-2',
+        type: 'rest_area',
+        latitude: 37.7698,
+        longitude: -122.4870,
+        name: 'Lakeside Bench',
+        accessibilityNote: 'Bench with backrest and armrests, paved pad',
+        createdAt: '2026-01-15T09:12:00Z',
+      },
+      {
+        id: 'wp-3',
+        type: 'scenic_viewpoint',
+        latitude: 37.7702,
+        longitude: -122.4878,
+        name: 'Lake Overlook',
+        accessibilityNote: 'Viewing platform with railing, wheelchair accessible',
+        createdAt: '2026-01-15T09:20:00Z',
+      },
+    ],
+    distanceMeters: 1850,
+    elevationGainMeters: 5,
+    estimatedDurationMinutes: 32,
+    createdAt: '2026-01-15T09:00:00Z',
+    updatedAt: '2026-01-15T09:32:00Z',
+    isPublished: false,
+  },
+  {
+    id: 'sample-2',
+    name: 'Redwood Creek Trail',
+    description:
+      'A boardwalk trail through old-growth redwoods. Some sections narrow to 1.2m. Gentle grades with one moderate slope near the creek bridge.',
+    difficulty: 'moderate',
+    surfaceType: 'boardwalk',
+    accessibilityFeatures: [
+      'handrails',
+      'rest_areas',
+      'shade_available',
+      'accessible_parking',
+    ],
+    coordinates: [],
+    waypoints: [
+      {
+        id: 'wp-4',
+        type: 'trailhead',
+        latitude: 37.8950,
+        longitude: -122.5716,
+        name: 'Visitor Center',
+        createdAt: '2026-02-01T10:00:00Z',
+      },
+      {
+        id: 'wp-5',
+        type: 'surface_change',
+        latitude: 37.8955,
+        longitude: -122.5720,
+        name: 'Boardwalk Start',
+        accessibilityNote: 'Transition from packed gravel to boardwalk; small lip at junction',
+        createdAt: '2026-02-01T10:08:00Z',
+      },
+      {
+        id: 'wp-6',
+        type: 'steep_section',
+        latitude: 37.8962,
+        longitude: -122.5730,
+        name: 'Creek Bridge Approach',
+        accessibilityNote: 'Moderate downhill slope for ~30m, handrails on both sides',
+        createdAt: '2026-02-01T10:22:00Z',
+      },
+    ],
+    distanceMeters: 3200,
+    elevationGainMeters: 42,
+    estimatedDurationMinutes: 55,
+    createdAt: '2026-02-01T10:00:00Z',
+    updatedAt: '2026-02-01T10:55:00Z',
+    isPublished: false,
+  },
+  {
+    id: 'sample-3',
+    name: 'Summit Ridge Path',
+    description:
+      'Steep gravel trail to the ridge viewpoint. Rocky in sections with exposed roots. Not suitable for wheelchairs or mobility aids.',
+    difficulty: 'difficult',
+    surfaceType: 'gravel',
+    accessibilityFeatures: ['rest_areas'],
+    coordinates: [],
+    waypoints: [
+      {
+        id: 'wp-7',
+        type: 'hazard',
+        latitude: 37.8800,
+        longitude: -122.2490,
+        name: 'Loose Gravel Section',
+        accessibilityNote: 'Steep loose surface, trekking poles recommended',
+        createdAt: '2026-02-10T08:15:00Z',
+      },
+      {
+        id: 'wp-8',
+        type: 'scenic_viewpoint',
+        latitude: 37.8815,
+        longitude: -122.2510,
+        name: 'Ridge Viewpoint',
+        createdAt: '2026-02-10T08:45:00Z',
+      },
+    ],
+    distanceMeters: 4800,
+    elevationGainMeters: 310,
+    estimatedDurationMinutes: 95,
+    createdAt: '2026-02-10T08:00:00Z',
+    updatedAt: '2026-02-10T09:35:00Z',
+    isPublished: false,
+  },
+];
 
 export const TrailListScreen: React.FC<TrailListScreenProps> = ({ navigation }) => {
   const [trails] = useState<Trail[]>(SAMPLE_TRAILS);
@@ -31,7 +171,7 @@ export const TrailListScreen: React.FC<TrailListScreenProps> = ({ navigation }) 
     return (
       <TouchableOpacity
         style={styles.card}
-        onPress={() => navigation.navigate('TrailDetail', { trailId: item.id })}
+        onPress={() => navigation.navigate('TrailDetail', { trail: item })}
         accessibilityLabel={`${item.name}, ${difficulty.label}, ${formatDistance(item.distanceMeters)}`}
         accessibilityHint="Double tap to view trail details"
         accessibilityRole="button"
